@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+model Business {
+  id  Int @id @default(autoincrement())
+  name String
+  email String @unique
+  mobile String @unique
+  password String
+  availabilities WeeklyAvailability[]
+  services Service[]
+  bookings Booking[]
+  status BusinessStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model WeeklyAvailability {
+  id Int @id @default(autoincrement())
+  day Int // 0. monday, 1 tuesday.
+  startsAt String // 09:00
+  endsAt String // 13:00
+  business Business @relation(fields: [businessId], references: [id])
+  businessId Int
+
+  @@index([day, businessId])
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Service {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  duration Int // minutes
+  price Decimal
+  business Business @relation(fields: [businessId], references: [id])
+  businessId Int
+  bookings Booking[]
+  // slots Int @default(1) // if business wants to provide multiple booking at same time.
+  status ServiceStatus
+
+  @@index([businessId])
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+  status UserStatus @default(PENDING)
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+
+// verify email
+model Token {
+  id Int @id @default(autoincrement())
+  token String
+  value String
+
+  createdAt DateTime @default(now())
+
+  @@index([token, value])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  NOSHOW
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id Int @id @default(autoincrement())
+
+  business Business @relation(fields: [businessId], references: [id])
+  businessId Int
+  service Service @relation(fields: [serviceId], references: [id])
+  serviceId Int
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+
+  date DateTime
+  startsAt DateTime
+  endsAt   DateTime
+  status BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, startsAt])
+  @@index([serviceId, startsAt])
+}
